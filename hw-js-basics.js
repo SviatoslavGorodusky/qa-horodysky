@@ -83,3 +83,51 @@ console.assert(
 );
 
 console.log('Усі перевірки console.assert виконано успішно!');
+
+// --- Завдання: retry(fn, maxAttempts) ---
+
+const retry = (fn, maxAttempts = 3) => {
+  let attempt = 1;
+
+  while (attempt <= maxAttempts) {
+    if (fn() === true) {
+      return attempt;
+    }
+    attempt++;
+  }
+
+  return -1;
+};
+
+// 1. Тест: fn повертає true з першої спроби -> очікуємо 1
+const resImmediateSuccess = retry(() => true);
+console.assert(resImmediateSuccess === 1, `Очікували 1, отримали ${resImmediateSuccess}`);
+
+// 2. Тест: fn завжди повертає false -> очікуємо -1, а викликана рівно maxAttempts разів (5 разів)
+let callCount5 = 0;
+const resAllFails = retry(() => {
+  callCount5++;
+  return false;
+}, 5);
+console.assert(resAllFails === -1, `Очікували -1, отримали ${resAllFails}`);
+console.assert(callCount5 === 5, `Очікували 5 викликів, отримали ${callCount5}`);
+
+// 3. Тест: дефолт maxAttempts = 3 працює без другого аргументу
+let callCountDefault = 0;
+const resDefault = retry(() => {
+  callCountDefault++;
+  return false;
+});
+console.assert(resDefault === -1, `Очікували -1, отримали ${resDefault}`);
+console.assert(callCountDefault === 3, `Очікували 3 виклики за дефолтом, отримали ${callCountDefault}`);
+
+// 4. Тест: успіх на конкретній спробі (наприклад, на 2-й)
+let callCountSuccessOn2 = 0;
+const resSuccessOn2 = retry(() => {
+  callCountSuccessOn2++;
+  return callCountSuccessOn2 === 2;
+}, 4);
+console.assert(resSuccessOn2 === 2, `Очікували успіх на 2 спробі, отримали ${resSuccessOn2}`);
+console.assert(callCountSuccessOn2 === 2, `Мало бути 2 виклики, отримали ${callCountSuccessOn2}`);
+
+console.log('Усі асерти для retry пройшли успішно!');
