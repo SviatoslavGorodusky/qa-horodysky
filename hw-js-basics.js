@@ -131,3 +131,40 @@ console.assert(resSuccessOn2 === 2, `Очікували успіх на 2 спр
 console.assert(callCountSuccessOn2 === 2, `Мало бути 2 виклики, отримали ${callCountSuccessOn2}`);
 
 console.log('Усі асерти для retry пройшли успішно!');
+
+
+// --- Завдання: getTimeout ---
+
+// 1. Замінили var на const і стрілкову функцію, прибрали hoisting та витоки області видимості.
+// 2. Використали ?? (nullish coalescing) замість ||, щоб коректно зберігати timeout: 0, бо 0 є falsy для ||.
+// 3. Замінили нестроге порівняння з рядком == '0' на суворе порівняння з числом === 0 без неявного приведення типів.
+const getTimeout = (config) => {
+  const timeout = config.timeout ?? 3000;
+  const retries = config.retries ?? 1;
+
+  if (retries === 0) {
+    return 0;
+  }
+
+  return timeout * retries;
+};
+
+// --- Перевірки console.assert ---
+
+// 1. Перевірка: timeout: 0 та retries: 0 мають повертати 0 (не 3000)
+const resZero = getTimeout({ timeout: 0, retries: 0 });
+console.assert(resZero === 0, `Очікували 0, отримали ${resZero}`);
+
+// 2. Перевірка: retries: 2 без переданого timeout має взяти дефолтні 3000 і повернути 6000
+const resDefaultTimeout = getTimeout({ retries: 2 });
+console.assert(resDefaultTimeout === 6000, `Очікували 6000, отримали ${resDefaultTimeout}`);
+
+// 3. Перевірка: стандартні значення з переданим timeout і retries
+const resNormal = getTimeout({ timeout: 2000, retries: 3 });
+console.assert(resNormal === 6000, `Очікували 6000, отримали ${resNormal}`);
+
+// 4. Перевірка: збереження timeout: 0 при ненульових retries (0 * 3 = 0)
+const resZeroTimeout = getTimeout({ timeout: 0, retries: 3 });
+console.assert(resZeroTimeout === 0, `Очікували 0, отримали ${resZeroTimeout}`);
+
+console.log('Усі асерти для getTimeout пройшли успішно!');
