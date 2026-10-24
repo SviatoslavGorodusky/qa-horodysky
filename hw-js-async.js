@@ -142,3 +142,78 @@ async function runAllTests() {
 }
 
 runAllTests();
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function retryAsync(fn, attempts = 3, delayMs = 500) {
+  let lastError;
+
+  for (let attempt = 1; attempt <= attempts; attempt++) {
+    try {
+      return await fn();
+    } catch (err) {
+      lastError = err;
+      if (attempt < attempts) {
+        await delay(delayMs);
+      }
+    }
+  }
+
+  throw new Error(`Failed after ${attempts} attempts`, { cause: lastError });
+}
+
+function makeFlaky(failTimes) {
+  let calls = 0;
+  return async () => {
+    calls++;
+    if (calls <= failTimes) {
+      throw new Error(`Flaky error on call ${calls}`);
+    }
+    return 'ok';
+  };
+}
+
+async function testRetryAsync() {
+  const flaky0 = makeFlaky(0);
+  const res1 = await retryAsync(flaky0, 3, 100);
+  console.assert(res1 === 'ok', `Сценарій 1: Очікували 'ok', отримали ${res1}`);
+
+  const flaky2 = makeFlaky(2);
+  const startTime = Date.now();
+  const res3 = await retryAsync(flaky2, 3, 500);
+  const duration = Date.now() - startTime;
+
+  console.assert(res3 === 'ok', `Сценарій 2: Очікували 'ok', отримали ${res3}`);
+  console.assert(
+    duration >= 1000,
+    `Сценарій 2: Час виконання має бути >= 1000ms, тривало ${duration}ms`
+  );
+
+  const flaky5 = makeFlaky(5);
+  let caughtError = null;
+
+  try {
+    await retryAsync(flaky5, 3, 100);
+  } catch (err) {
+    caughtError = err;
+  }
+
+  console.assert(
+    caughtError !== null,
+    'Сценарій 3: Мала виникнути помилка, але її не було'
+  );
+  console.assert(
+    caughtError?.message === 'Failed after 3 attempts',
+    `Сценарій 3: Неправильне повідомлення помилки: "${caughtError?.message}"`
+  );
+  console.assert(
+    caughtError?.cause instanceof Error,
+    'Сценарій 3: Поле cause має містити обʼєкт помилки Error'
+  );
+  console.assert(
+    caughtError?.cause?.message === 'Flaky error on call 3',
+    `Сценарій 3: Неправильна остання помилка в cause: "${caughtError?.cause?.message}"`
+  );
+}
+
+testRetryAsync();
