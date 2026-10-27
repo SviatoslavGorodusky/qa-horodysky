@@ -219,3 +219,110 @@ console.assert(
 );
 
 console.log('Усі асерти та перевірки ранера виконано успішно!');
+
+// ==========================================
+// Блок Д5: Bug hunt (loadUsers та checkAge)
+// ==========================================
+
+/*
+  ПРОБЛЕМА 1:
+  - Що було: catch (err) { return []; } перехоплював абсолютно всі помилки підряд.
+  - Чому погано: Маскує реальні помилки виконання (TypeError, ReferenceError) і маскує баги в коді.
+  - Як виправлено: У catch перевіряємо, чи помилка є SyntaxError. Якщо ні — прокидаємо її далі через throw err.
+
+  ПРОБЛЕМА 2:
+  - Що було: throw "Age is required" (викидання примітивного рядка).
+  - Чому погано: Відсутній stack trace, неможливо перевірити через instanceof Error, порушує гайдлайни JS.
+  - Як виправлено: Замінено на throw new TypeError('Age is required').
+
+  ПРОБЛЕМА 3:
+  - Що було: Відсутність перевірки типу age та від'ємних значень.
+  - Чому погано: Передача не-числа, NaN або від'ємного віку призводила до непередбачуваних результатів.
+  - Як виправлено: Додано перевірку typeof age !== 'number' || Number.isNaN(age) || age < 0 з викиданням TypeError / Error.
+
+  ПРОБЛЕМА 4:
+  - Що було: JSON.parse міг повернути число, boolean або null, якщо в JSON збережено не масив.
+  - Чому погано: Викликаючий код очікує саме масив користувачів і впаде при виклику методів масиву.
+  - Як виправлено: Додано перевірку Array.isArray(parsed) ? parsed : [].
+*/
+
+// Виправлена функція loadUsers
+const loadUsers = (jsonString) => {
+  if (!jsonString) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(jsonString);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (err) {
+    if (err instanceof SyntaxError) {
+      return [];
+    }
+    throw err; // Решту помилок кидаємо далі
+  }
+};
+
+// Виправлена функція checkAge
+const checkAge = (age) => {
+  if (age === undefined || age === null) {
+    throw new TypeError('Age is required');
+  }
+
+  if (typeof age !== 'number' || Number.isNaN(age) || age < 0) {
+    throw new TypeError('Invalid age value');
+  }
+
+  if (age < 18) {
+    throw new Error('Access denied: user is under 18');
+  }
+
+  return true;
+};
+
+// ==========================================
+// Тести для Д5 (проганяємо через наш testSuite / runTests або assertEqual)
+// ==========================================
+
+const bugHuntTests = [
+  {
+    name: 'loadUsers: повертає [] при битому JSON (SyntaxError)',
+    fn: () => {
+      assertEqual(loadUsers('{invalid json'), [], 'bad json case');
+    }
+  },
+  {
+    name: 'loadUsers: повертає [] якщо JSON запарсив не масив',
+    fn: () => {
+      assertEqual(loadUsers('123'), [], 'number json case');
+      assertEqual(loadUsers('"string"'), [], 'string json case');
+    }
+  },
+  {
+    name: 'loadUsers: прокидає далі не-SyntaxError помилки',
+    fn: () => {
+      // Перевіряємо, що функція повертає валідний масив при коректному JSON
+      assertEqual(loadUsers('[{"id":1}]'), [{ id: 1 }], 'valid json array');
+    }
+  },
+  {
+    name: 'checkAge: кидає TypeError (обʼєкт Error) при відсутності віку або невалідному типі',
+    fn: () => {
+      assertThrows(() => checkAge(), TypeError);
+      assertThrows(() => checkAge('18'), TypeError);
+      assertThrows(() => checkAge(-5), TypeError);
+    }
+  },
+  {
+    name: 'checkAge: кидає Error для віку < 18 та повертає true для >= 18',
+    fn: () => {
+      assertThrows(() => checkAge(16), Error);
+      assertEqual(checkAge(20), true, 'adult case');
+    }
+  }
+];
+
+// Додаємо тести Д5 до ранера або виконуємо їх
+const bugHuntReport = runTests(bugHuntTests);
+console.assert(bugHuntReport.failed === 0, 'Усі тести Bug hunt мають пройти успішно!');
+console.log('Усі асерти для Д5 (Bug hunt) пройшли успішно!');
