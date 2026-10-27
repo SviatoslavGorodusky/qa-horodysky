@@ -45,3 +45,57 @@ console.assert(
 );
 
 console.log('Усі асерти для getSlowFailed пройшли успішно!');
+
+// ==========================================
+// Блок Д2: Групування за статусом (groupByStatus)
+// ==========================================
+
+const groupByStatus = (results) =>
+  results.reduce(
+    (acc, test) => {
+      if (acc[test.status]) {
+        acc[test.status].push(test.name);
+      }
+      return acc;
+    },
+    { passed: [], failed: [], skipped: [] }
+  );
+
+const testResultsData = [
+  { name: 'Auth test', status: 'failed' },
+  { name: 'Payment test', status: 'passed' },
+  { name: 'Cart test', status: 'failed' },
+  { name: 'Profile test', status: 'passed' },
+  { name: 'Settings test', status: 'skipped' },
+  { name: 'Legacy test', status: 'unknown' } // невідомий статус
+];
+
+// 1. Перевірка коректного групування за статусами
+const groupedResult = groupByStatus(testResultsData);
+console.assert(
+  JSON.stringify(groupedResult.passed) === JSON.stringify(['Payment test', 'Profile test']),
+  `Сценарій 1 (passed): Очікували ['Payment test', 'Profile test'], отримали ${JSON.stringify(groupedResult.passed)}`
+);
+console.assert(
+  JSON.stringify(groupedResult.failed) === JSON.stringify(['Auth test', 'Cart test']),
+  `Сценарій 1 (failed): Очікували ['Auth test', 'Cart test'], отримали ${JSON.stringify(groupedResult.failed)}`
+);
+console.assert(
+  JSON.stringify(groupedResult.skipped) === JSON.stringify(['Settings test']),
+  `Сценарій 1 (skipped): Очікували ['Settings test'], отримали ${JSON.stringify(groupedResult.skipped)}`
+);
+
+// 2. Перевірка порожнього масиву (повертає об'єкт із трьома порожніми масивами)
+const emptyGrouped = groupByStatus([]);
+console.assert(
+  JSON.stringify(emptyGrouped) === JSON.stringify({ passed: [], failed: [], skipped: [] }),
+  `Сценарій 2 (порожній): Очікували потрійний порожній об'єкт, отримали ${JSON.stringify(emptyGrouped)}`
+);
+
+// 3. Перевірка стійкості до невідомих статусів (не ламає функцію і не додає зайвих ключів)
+console.assert(
+  !('unknown' in groupedResult),
+  'Сценарій 3: Ключ з невідомим статусом не повинен створюватися в акумуляторі!'
+);
+
+console.log('Усі асерти для groupByStatus пройшли успішно!');
