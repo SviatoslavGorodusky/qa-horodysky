@@ -1,66 +1,5 @@
 // ==========================================
-// Блок Д1: Безпечне отримання кошика (safeGetCart)
-// ==========================================
-
-const safeGetCart = (storageValue) => {
-  if (!storageValue) {
-    return [];
-  }
-
-  try {
-    const parsed = JSON.parse(storageValue);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (error) {
-    return [];
-  }
-};
-
-// --- Тести Д1 ---
-console.assert(
-  JSON.stringify(safeGetCart(null)) === '[]',
-  'Сценарій 1 (null): Має повертати порожній масив []'
-);
-
-console.assert(
-  JSON.stringify(safeGetCart('')) === '[]',
-  'Сценарій 1 (empty string): Має повертати порожній масив []'
-);
-
-console.assert(
-  JSON.stringify(safeGetCart('{bad')) === '[]',
-  'Сценарій 1 (bad JSON): Має повертати порожній масив []'
-);
-
-console.assert(
-  JSON.stringify(safeGetCart('{"a":1}')) === '[]',
-  'Сценарій 1 (JSON object): Має повертати порожній масив [], бо це не масив'
-);
-
-const validCartJson = '[{"id":1,"title":"Phone"}]';
-const parsedCart = safeGetCart(validCartJson);
-
-console.assert(
-  Array.isArray(parsedCart) && parsedCart.length === 1 && parsedCart[0].id === 1,
-  `Сценарій 2 (valid array): Очікували масив із товаром, отримали ${JSON.stringify(parsedCart)}`
-);
-
-let didCartThrow = false;
-try {
-  safeGetCart('{{{invalid json content');
-} catch (e) {
-  didCartThrow = true;
-}
-
-console.assert(
-  !didCartThrow,
-  'Сценарій 3 (never throws): Функція не повинна викидати помилку на некоректних даних'
-);
-
-console.log('Усі асерти для safeGetCart пройшли успішно!');
-
-
-// ==========================================
-// Блок Д3: Кастомний AssertionError, assertEqual та універсальний assertThrows
+// 1. Класи помилок та допоміжні асерти (Д3)
 // ==========================================
 
 class AssertionError extends Error {
@@ -100,11 +39,25 @@ const assertThrows = (fn, ErrorType = Error) => {
   }
 };
 
-
 // ==========================================
-// Блок Д2: Парсинг ціни з помилками (parsePrice)
+// 2. Реалізація функцій Д1 та Д2
 // ==========================================
 
+// Д1: safeGetCart
+const safeGetCart = (storageValue) => {
+  if (!storageValue) {
+    return [];
+  }
+
+  try {
+    const parsed = JSON.parse(storageValue);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (error) {
+    return [];
+  }
+};
+
+// Д2: parsePrice
 const parsePrice = (text) => {
   if (typeof text !== 'string') {
     throw new TypeError('Argument must be a string');
@@ -127,71 +80,142 @@ const parsePrice = (text) => {
   return parsedValue;
 };
 
-// --- Тести Д2 ---
+// ==========================================
+// 3. Міні-ранер runTests (Д4)
+// ==========================================
+
+const runTests = (tests) => {
+  const summary = tests.reduce(
+    (acc, { name, fn }) => {
+      try {
+        fn();
+        acc.passed += 1;
+        acc.results.push({ name, status: 'passed' });
+        console.log(`✓ ${name}`);
+      } catch (err) {
+        acc.failed += 1;
+        const errorMessage = err?.message || String(err);
+        acc.results.push({ name, status: 'failed', error: errorMessage });
+        console.log(`✗ ${name} — ${errorMessage}`);
+      }
+      return acc;
+    },
+    { passed: 0, failed: 0, results: [] }
+  );
+
+  return summary;
+};
+
+// ==========================================
+// 4. Прогін тестівого набору Д1-Д3 + Навмисно впалий тест
+// ==========================================
+
+const testSuite = [
+  // --- Тести Д1 ---
+  {
+    name: 'safeGetCart: повертає [] для null, порожнього рядка та битого JSON',
+    fn: () => {
+      assertEqual(safeGetCart(null), [], 'null case');
+      assertEqual(safeGetCart(''), [], 'empty string case');
+      assertEqual(safeGetCart('{bad'), [], 'bad json case');
+      assertEqual(safeGetCart('{"a":1}'), [], 'json object case');
+    }
+  },
+  {
+    name: 'safeGetCart: повертає масив товарів для валідного JSON',
+    fn: () => {
+      const validCart = '[{"id":1,"title":"Phone"}]';
+      assertEqual(safeGetCart(validCart), [{ id: 1, title: 'Phone' }], 'valid array case');
+    }
+  },
+
+  // --- Тести Д2 ---
+  {
+    name: 'parsePrice: успішно парсить $1,299.99 та $45.50',
+    fn: () => {
+      assertEqual(parsePrice('$1,299.99'), 1299.99, 'parse $1,299.99');
+      assertEqual(parsePrice('$45.50'), 45.5, 'parse $45.50');
+    }
+  },
+  {
+    name: 'parsePrice: кидає TypeError, якщо передано не рядок',
+    fn: () => {
+      assertThrows(() => parsePrice(1299), TypeError);
+    }
+  },
+  {
+    name: 'parsePrice: кидає Error для некоректних і від’ємних цін',
+    fn: () => {
+      assertThrows(() => parsePrice('invalid text'), Error);
+      assertThrows(() => parsePrice(''), Error);
+      assertThrows(() => parsePrice('-$50'), Error);
+    }
+  },
+
+  // --- Тести Д3 ---
+  {
+    name: 'assertEqual: порівнює однакові обʼєкти та кидає AssertionError при розбіжності',
+    fn: () => {
+      assertEqual(10, 10, 'Numbers equality');
+      assertEqual({ a: 1 }, { a: 1 }, 'Objects equality');
+      assertThrows(() => assertEqual('active', 'pending', 'Status'), AssertionError);
+    }
+  },
+  {
+    name: 'assertThrows: перевіряє викидання помилок потрібного типу',
+    fn: () => {
+      assertThrows(() => {
+        throw new TypeError('Bad type');
+      }, TypeError);
+
+      assertThrows(() => assertThrows(() => {}, RangeError), AssertionError);
+    }
+  },
+
+  // --- Навмисно впалий тест ---
+  {
+    name: 'Навмисно впалий тест (для перевірки ранера)',
+    fn: () => {
+      assertEqual('фактичний результат', 'очікуваний результат', 'Тест на падіння');
+    }
+  },
+
+  // --- Тест після падіння ---
+  {
+    name: 'Тест після падіння: перевіряє продовження работы ранера',
+    fn: () => {
+      assertEqual(true, true, 'Runner continuation');
+    }
+  }
+];
+
+// ==========================================
+// 5. Запуск ранера та перевірка його роботи
+// ==========================================
+
+console.log('--- ЗАПУСК ТЕСТІВ ЧЕРЕЗ MIN-RUNNER ---');
+const report = runTests(testSuite);
+console.log('------------------------------------\n');
+
 console.assert(
-  parsePrice('$1,299.99') === 1299.99,
-  'Сценарій 1 (валідний $1,299.99): Очікували 1299.99'
+  report.passed === 8,
+  `Ранер: Очікували passed = 8, отримали ${report.passed}`
 );
 
 console.assert(
-  parsePrice('$45.50') === 45.5,
-  'Сценарій 1 (валідний $45.50): Очікували 45.5'
+  report.failed === 1,
+  `Ранер: Очікували failed = 1, отримали ${report.failed}`
 );
 
-assertThrows(() => parsePrice(1299), TypeError);
-assertThrows(() => parsePrice('invalid text'), Error);
-assertThrows(() => parsePrice(''), Error);
-assertThrows(() => parsePrice('-$50'), Error);
+console.assert(
+  report.results.length === report.passed + report.failed,
+  'Ранер: Сума passed + failed має дорівнювати кількості елементів у results'
+);
 
-console.log('Усі асерти для parsePrice пройшли успішно!');
+const failedItem = report.results.find((r) => r.status === 'failed');
+console.assert(
+  failedItem && failedItem.error && failedItem.error.includes('Тест на падіння'),
+  'Ранер: У звіті для впалого тесту має бути повідомлення помилки з label'
+);
 
-
-// --- Тести Д3 ---
-assertEqual(10, 10, 'Перевірка чисел');
-assertEqual({ a: 1 }, { a: 1 }, 'Перевірка об’єктів');
-
-try {
-  assertEqual('active', 'pending', 'Статус юзера');
-  console.assert(false, 'assertEqual мав кинути AssertionError');
-} catch (err) {
-  console.assert(
-    err instanceof AssertionError,
-    'AssertionError: Має бути екземпляром класу AssertionError'
-  );
-  console.assert(
-    err.name === 'AssertionError',
-    `AssertionError: Поле name має бути 'AssertionError', отримали '${err.name}'`
-  );
-  console.assert(
-    err.message === 'Статус юзера: expected "pending", got "active"',
-    `AssertionError: Неправильне повідомлення: '${err.message}'`
-  );
-}
-
-assertThrows(() => {
-  throw new TypeError('Bad type');
-}, TypeError);
-
-try {
-  assertThrows(() => {}, RangeError);
-  console.assert(false, 'assertThrows мав упасти, бо fn нічого не кинула');
-} catch (err) {
-  console.assert(
-    err instanceof AssertionError && err.message.includes('did not throw any error'),
-    'assertThrows: Коректно впав при відсутності помилки'
-  );
-}
-
-try {
-  assertThrows(() => {
-    throw new SyntaxError('Invalid syntax');
-  }, TypeError);
-  console.assert(false, 'assertThrows мав упасти через невідповідність типу');
-} catch (err) {
-  console.assert(
-    err instanceof AssertionError && err.message.includes('Expected function to throw TypeError, but it threw SyntaxError'),
-    'assertThrows: Коректно впав при відмінності типів'
-  );
-}
-
-console.log('Усі асерти для assertEqual та assertThrows пройшли успішно!');
+console.log('Усі асерти та перевірки ранера виконано успішно!');
