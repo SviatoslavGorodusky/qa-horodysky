@@ -99,3 +99,54 @@ console.assert(
 );
 
 console.log('Усі асерти для groupByStatus пройшли успішно!');
+
+// ==========================================
+// Блок Д3: Парсинг користувачів (parseUsers)
+// ==========================================
+
+const parseUsers = ({ data: { users = [] } = {} } = {}) =>
+  users
+    .filter((user) => user?.email && user.email.includes('@'))
+    .map(({ id, firstName, lastName, email }) => {
+      const name = lastName ? `${firstName} ${lastName}` : firstName;
+      return `#${id} ${name} <${email}>`;
+    });
+
+const apiResponseData = {
+  data: {
+    users: [
+      { id: 7, firstName: 'Olena', lastName: 'Koval', email: 'olena@test.com' },
+      { id: 8, firstName: 'Taras', email: 'taras@test.com' }, // Без lastName
+      { id: 9, firstName: 'Ivan', lastName: 'Franko', email: 'invalid-email' }, // Невалідний email
+      { id: 10, firstName: 'Anna', lastName: 'Petrenko' } // Без email
+    ]
+  },
+  meta: { page: 1 }
+};
+
+// 1. Перевірка коректного форматування та фільтрації по невалідному email
+const parsedResult = parseUsers(apiResponseData);
+console.assert(
+  JSON.stringify(parsedResult) ===
+    JSON.stringify([
+      '#7 Olena Koval <olena@test.com>',
+      '#8 Taras <taras@test.com>'
+    ]),
+  `Сценарій 1: Очікували відформатований масив, отримали ${JSON.stringify(parsedResult)}`
+);
+
+// 2. Перевірка відсутності подвійних пробілів (для користувачів без lastName)
+console.assert(
+  !parsedResult[1].includes('  '),
+  `Сценарій 2: Рядок без lastName містить подвійний пробіл: "${parsedResult[1]}"`
+);
+
+// 3. Перевірка порожнього масиву users
+const emptyResponse = { data: { users: [] }, meta: { page: 1 } };
+const emptyParsed = parseUsers(emptyResponse);
+console.assert(
+  Array.isArray(emptyParsed) && emptyParsed.length === 0,
+  `Сценарій 3 (порожній): Очікували [], отримали ${JSON.stringify(emptyParsed)}`
+);
+
+console.log('Усі асерти для parseUsers пройшли успішно!');
