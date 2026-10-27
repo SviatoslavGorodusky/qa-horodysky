@@ -150,3 +150,51 @@ console.assert(
 );
 
 console.log('Усі асерти для parseUsers пройшли успішно!');
+
+// ==========================================
+// Блок Д4: Порівняння об'єктів (diffObjects)
+// ==========================================
+
+const formatDiffValue = (val) => (val === undefined ? 'undefined' : JSON.stringify(val));
+
+const diffObjects = (expected, actual) => {
+  const allKeys = Array.from(new Set([...Object.keys(expected), ...Object.keys(actual)]));
+
+  return allKeys
+    .filter((key) => expected[key] !== actual[key])
+    .map((key) => `${key}: expected ${formatDiffValue(expected[key])}, got ${formatDiffValue(actual[key])}`);
+};
+
+// 1. Перевірка однакових об'єктів (повертає порожній масив [])
+const sameObj1 = { role: 'admin', age: 25 };
+const sameObj2 = { role: 'admin', age: 25 };
+const emptyDiff = diffObjects(sameObj1, sameObj2);
+console.assert(
+  Array.isArray(emptyDiff) && emptyDiff.length === 0,
+  `Сценарій 1 (однакові): Очікували [], отримали ${JSON.stringify(emptyDiff)}`
+);
+
+// 2. Перевірка розбіжностей у значеннях ілюструючи правильний формат
+const expectedUser = { role: 'admin', status: 'active' };
+const actualUser = { role: 'viewer', status: 'active' };
+const diffResult1 = diffObjects(expectedUser, actualUser);
+console.assert(
+  JSON.stringify(diffResult1) === JSON.stringify(['role: expected "admin", got "viewer"']),
+  `Сценарій 2 (різні значення): Очікували ['role: expected "admin", got "viewer"'], отримали ${JSON.stringify(diffResult1)}`
+);
+
+// 3. Перевірка ключів, які відсутні в одному з об'єктів (undefined)
+const objWithMissing = { name: 'Olena', role: 'admin' };
+const objActualMissing = { name: 'Olena', isAuth: true };
+const diffResult2 = diffObjects(objWithMissing, objActualMissing);
+
+console.assert(
+  diffResult2.includes('role: expected "admin", got undefined'),
+  `Сценарій 3 (бракує в actual): Очікували розбіжність ролі з undefined, отримали ${JSON.stringify(diffResult2)}`
+);
+console.assert(
+  diffResult2.includes('isAuth: expected undefined, got true'),
+  `Сценарій 3 (бракує в expected): Очікували розбіжність isAuth з undefined, отримали ${JSON.stringify(diffResult2)}`
+);
+
+console.log('Усі асерти для diffObjects пройшли успішно!');
