@@ -893,11 +893,6 @@ const getUserDiscount = () => {
     });
 };
 
-const applyDiscount= async (originalPrice) =>{
-    const discount = await getUserDiscount()
-    const full = originalPrice - (originalPrice * discount/100)
-    return full
-}
 
 const main1 = async() =>{
     const full= await applyDiscount(1000)
@@ -1083,3 +1078,162 @@ const sumReversed2 = (a, b) => {
 
   return numA + numB;
 };
+
+
+
+const roles = ['user', 'editor']
+const  canPublish = (roles)=>{
+   return roles.some((role) => role === 'admin' || role === 'editor')
+}
+
+const scores = [45, 52, 38, 89, 72]
+
+const  hasPassed = (scores) =>{
+    return scores.every((mark) => mark >= 40)
+}
+const getFirstHonors= (scores)=>{
+    return scores.find((mark) => mark >= 80 )
+}
+
+const shelfLife = [12, 5, 0, -2, 8,-6]
+
+const getExpiredIndex = (shelfLife) =>{
+    return shelfLife.findIndex((bad)=> bad<0)
+}
+
+const getTopAndBottom = (deck) => {
+  const [first] = deck;
+  const last = deck.at(-1); 
+  
+  return [first, last];
+};
+
+const player = {
+  name: 'Elyse',
+  level: 5,
+  score: 1200
+};
+
+const updateScore = (player, newScore) => {
+  return {
+    ...player,
+    score: newScore
+  };
+};
+
+const swapCoordinates = ({ x, y })=>{
+    return [y,x]
+}
+
+const getRestCards= (deck)=>{
+    const [,...rest]= deck
+    return rest
+}
+
+
+const addZeroAndDropLast = (deck)=>{
+    const rn= deck.slice(0, -1)
+    return [0 , rn]
+}
+
+
+const userProfile = {
+  id: 10,
+  username: 'coder_2026',
+  email: 'test@gmail.com',
+  passwordHash: 'secret_abc123'
+};
+
+const getPublicProfile = (profile) => {
+  // 1. Забираємо passwordHash окремо, а всі інші ключі збираємо в rest:
+  const { passwordHash, ...publicData } = profile;
+  
+  // 2. Повертаємо тільки залишок (publicData)
+  return publicData;
+};
+
+const rawUserData = {
+  id: 101,
+  username: 'alex_code',
+  // age та role відсутні!
+};
+
+const formatUser = (data)=>{
+    const {username, age=18 ,role='guest', ...rest} = data
+    return [`${username} (${age}, ${role})`, rest]
+}
+
+const testResult = {
+  testName: 'Login Form Test',
+  status: 'passed',
+  duration: 120,
+  browser: 'Chrome'
+};
+
+const logTest = ({ testName, status = 'unknown', ...details }) => {
+  return `Test '${testName}' status: ${status}`;
+};
+
+const requestConfig = {
+  url: 'https://api.example.com/users',
+  // method та timeout відсутні!
+};
+
+const sendRequest = ({url, timeout=5000, method='GET', ...options}) =>{
+    return `Sending ${method} request to ${url} timeout:${timeout}`
+}
+
+const bugReport = {
+  title: 'Кнопка "Увійти" не активна',
+  severity: 'high',
+  // priority та environment відсутні!
+};
+const formatBugReport = ({title,severity,priority='medium',environment='Production',...extra})=>{
+    return `Bug: ${title} Severity: ${severity} priority: ${priority} Env:${environment}`
+}
+
+const cardTypeCheck = (deck, type)=>{
+    let count = 0 
+    deck.forEach(card => {
+        if (card === type){
+            count++
+        }
+    });
+    return count
+}
+
+const testResults = [
+  { name: 'Login Test', passed: true },
+  { name: 'Checkout Test', passed: false },
+  { name: 'Search Test', passed: true },
+  { name: 'Profile Test', passed: false }
+];
+
+const countPassedTests = (results) =>{
+    let count = 0
+    for(const {passed} of results){
+        if (passed === true){
+            count++
+        }
+    }
+    return count
+}
+
+const testDurations = [
+  ['Auth Module', 120],
+  ['Payment Gateway', 450],
+  ['User Profile', 80],
+  ['Search API', 300]
+];
+
+const countLongTests = (tests, threshold)=>{
+    let count = 0 
+    for (const [name , duration] of tests){
+        if (duration >= threshold){
+            count++
+        }
+    }
+    return count
+}
+
+console.log(countLongTests(testDurations, 100))
