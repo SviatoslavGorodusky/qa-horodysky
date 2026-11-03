@@ -168,3 +168,54 @@ const resZeroTimeout = getTimeout({ timeout: 0, retries: 3 });
 console.assert(resZeroTimeout === 0, `Очікували 0, отримали ${resZeroTimeout}`);
 
 console.log('Усі асерти для getTimeout пройшли успішно!');
+
+// ==========================================
+// Завдання: classifyTemperature(t)
+// 
+// Список граничних значень (Boundary Values & Equivalence Classes):
+// 1. Нижня межа (10):
+//    - 9.9 / 9.99 -> 'cold' (значення строго менше 10)
+//    - 10 -> 'warm' (нижня межа 10 включається у warm)
+//    - 10.01 -> 'warm' (значення трохи більше 10)
+// 2. Верхня межа (25):
+//    - 24.99 -> 'warm' (значення менше 25)
+//    - 25 -> 'warm' (верхня межа 25 включається у warm)
+//    - 25.01 / 25.1 -> 'hot' (значення строго більше 25)
+// 3. Нечислові значення та спеціальні типи (invalid):
+//    - '20' (рядок з числом)
+//    - NaN (значення Not-a-Number)
+//    - null / undefined / false
+//    - Infinity / -Infinity (нескінченності, відсікаються через !Number.isFinite)
+// ==========================================
+
+const classifyTemperature = (t) => {
+  if (typeof t !== 'number' || Number.isNaN(t) || !Number.isFinite(t)) {
+    return 'invalid';
+  }
+
+  if (t < 10) {
+    return 'cold';
+  }
+
+  if (t <= 25) {
+    return 'warm';
+  }
+
+  return 'hot';
+};
+
+// --- Обов'язкові перевірки через console.assert ---
+console.assert(classifyTemperature(9.9) === 'cold', 'Failed for 9.9: expected "cold"');
+console.assert(classifyTemperature(10) === 'warm', 'Failed for 10: expected "warm"');
+console.assert(classifyTemperature(25) === 'warm', 'Failed for 25: expected "warm"');
+console.assert(classifyTemperature(25.1) === 'hot', 'Failed for 25.1: expected "hot"');
+console.assert(classifyTemperature('20') === 'invalid', 'Failed for "20": expected "invalid"');
+console.assert(classifyTemperature(NaN) === 'invalid', 'Failed for NaN: expected "invalid"');
+
+// --- Додаткові перевірки граничних значень та типів ---
+console.assert(classifyTemperature(9.99) === 'cold', 'Failed for 9.99: expected "cold"');
+console.assert(classifyTemperature(10.01) === 'warm', 'Failed for 10.01: expected "warm"');
+console.assert(classifyTemperature(25.01) === 'hot', 'Failed for 25.01: expected "hot"');
+console.assert(classifyTemperature(Infinity) === 'invalid', 'Failed for Infinity: expected "invalid"');
+console.assert(classifyTemperature(null) === 'invalid', 'Failed for null: expected "invalid"');
+console.assert(classifyTemperature(undefined) === 'invalid', 'Failed for undefined: expected "invalid"');
