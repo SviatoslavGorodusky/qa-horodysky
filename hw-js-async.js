@@ -343,3 +343,133 @@ setTimeout(() => {
   setTimeout(() => console.log('t3'), 0);
   Promise.resolve().then(() => console.log('p1'));
 }, 300);
+
+// ==========================================
+// Блок Д4: Послідовно vs паралельно
+// ==========================================
+
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function fetchUser(id) {
+  await delay(500);
+  if (id === 4) throw new Error(`User ${id}: 500 Internal Server Error`);
+  return { id, name: `user-${id}` };
+}
+
+// 1. Послідовне завантаження через for...of з await
+async function loadSequential(ids) {
+  const results = [];
+  for (const id of ids) {
+    const user = await fetchUser(id);
+    results.push(user);
+  }
+  return results;
+}
+
+// 2. Паралельне завантаження через Promise.all
+async function loadParallel(ids) {
+  return await Promise.all(ids.map((id) => fetchUser(id)));
+}
+
+// 3. Паралельне завантаження зі збором звіту через Promise.allSettled (ніколи не кидає помилку)
+async function loadReport(ids) {
+  const settled = await Promise.allSettled(ids.map((id) => fetchUser(id)));
+
+  const ok = [];
+  const failed = [];
+
+  settled.forEach((result, index) => {
+    if (result.status === 'fulfilled') {
+      ok.push(result.value);
+    } else {
+      failed.push({
+        id: ids[index],
+        reason: result.reason.message || result.reason,
+      });
+    }
+  });
+
+  return { ok, failed };
+}
+
+// --- Заміри часу та тестування функцій ---
+async function runD4Tests() {
+  console.log('=== Блок Д4: Тестування продуктивності та обробки помилок ===\n');
+
+  // ------------------------------------------
+  // Тест 1: Заміри часу для [1, 2, 3]
+  // ------------------------------------------
+  console.time('loadSequential [1, 2, 3]');
+  await loadSequential([1, 2, 3]);
+  console.timeEnd('loadSequential [1, 2, 3]');
+  // Замір: ~1500 мс (запити виконуються по черзі: 500ms * 3)
+
+  console.time('loadParallel [1, 2, 3]');
+  await loadParallel([1, 2, 3]);
+  console.timeEnd('loadParallel [1, 2, 3]');
+  // Замір: ~500 мс (запити виконуються одночасно)
+
+  console.time('loadReport [1, 2, 3]');
+  await loadReport([1, 2, 3]);
+  console.timeEnd('loadReport [1, 2, 3]');
+  // Замір: ~500 мс (запити виконуються одночасно)
+
+  // ------------------------------------------
+  // Тест 2: Обробка помилок для [1, 2, 3, 4]
+  // ------------------------------------------
+
+  // A. loadParallel з try/catch (падає на першій помилці)
+  try {
+    console.time('loadParallel [1, 2, 3, 4]');
+    await loadParallel([1, 2, 3, 4]);
+  } catch (error) {
+    console.log('\n[loadParallel catch]:', error.message);
+  } finally {
+    console.timeEnd('loadParallel [1, 2, 3, 4]');
+    // Замір: ~500 мс
+  }
+
+  // B. loadReport (ніколи не падає, повертає детальну статистику)
+  console.time('loadReport [1, 2, 3, 4]');
+  const report = await loadReport([1, 2, 3, 4]);
+  console.timeEnd('loadReport [1, 2, 3, 4]');
+  // Замір: ~500 мс
+
+  console.log('\nРезультат loadReport([1, 2, 3, 4]):', JSON.stringify(report, null, 2));
+
+  // Перевірки через console.assert
+  console.assert(report.ok.length === 3, 'Expected 3 successful items in ok array');
+  console.assert(report.failed.length === 1, 'Expected 1 failed item in failed array');
+  console.assert(report.failed[0].id === 4, 'Failed item ID should be 4');
+}
+
+runD4Tests();
+
+/*
+================================================================================
+Результати вимірів часу:
+- loadSequential([1, 2, 3]): ~1500–1515 мс (кожен запит чекає завершення попереднього)
+- loadParallel([1, 2, 3]): ~500–510 мс (усі запити стартують одночасно)
+- loadReport([1, 2, 3, 4]): ~500–510 мс (повертає { ok: [3 елементи], failed: [1 елемент] })
+
+--------------------------------------------------------------------------------
+Питання для QA:
+Яку функцію ви взяли б для підготовки тестових даних через API і чому?
+
+Відповідь:
+Вибір залежить від сценарію та залежностей між даними:
+
+1. Для створення НЕЗАЛЕЖНИХ тестових даних (наприклад, створення 10 тестових користувачів, 
+   товарів чи сутностей для предумови тесту) найкраще обрати `loadParallel` або `loadReport`:
+   - `loadParallel` (Promise.all) — найшвидший варіант для "ідеальної" підготовки даних (Fail-Fast). 
+     Якщо хоча б один об'єкт не створиться, підготовка тестового оточення вважається зіпсованою, 
+     і тест має негайно впасти, заощаджуючи час execution-раннера.
+   - `loadReport` (Promise.allSettled) — ідеально підходить для генерації масових тестових наборів (Test Data Provisioning) 
+     або очищення (Teardown), де частковий успіх є прийнятним і потрібно точно знати, які саме 
+     записи не створилися, без передчасного переривання всього скрипту.
+
+2. `loadSequential` знадобиться ТІЛЬКИ якщо є жорстка ПОСЛІДОВНА ЗАЛЕЖНІСТЬ (наприклад: створити компанію -> 
+   отримати її ID -> створити відділ у цій компанії -> створити співробітника у відділі) 
+   або якщо API має суворий Rate Limiting (обмеження за кількістю запитів на секунду).
+================================================================================
+*/
