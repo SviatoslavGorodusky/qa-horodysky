@@ -143,7 +143,7 @@ async function runAllTests() {
 
 runAllTests();
 
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+// const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 async function retryAsync(fn, attempts = 3, delayMs = 500) {
   let lastError;
