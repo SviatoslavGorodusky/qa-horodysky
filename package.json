@@ -1,0 +1,23 @@
+{
+  "name": "qa-horodysky",
+  "version": "1.0.0",
+  "description": "Цей репозиторій містить практичні завдання та навчальні матеріали з курсу тестування програмного забезпечення та автоматизації.",
+  "main": "hw-js-async.js",
+  "scripts": {},
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/SviatoslavGorodusky/qa-horodysky.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/SviatoslavGorodusky/qa-horodysky/issues"
+  },
+  "homepage": "https://github.com/SviatoslavGorodusky/qa-horodysky#readme",
+  "devDependencies": {
+    "@playwright/test": "^1.64.1",
+    "@types/node": "^26.6.5"
+  }
+}
