@@ -198,3 +198,68 @@ console.assert(
 );
 
 console.log('Усі асерти для diffObjects пройшли успішно!');
+
+// ==========================================
+// Блок Д5: Рефакторинг getReport
+// ==========================================
+
+/*
+--- Аналіз 3 багів у початковій версії getReport ---
+
+1. Баг 1 (Сортування та мутація вхідного масиву):
+   - Що було: users.sort() без компаратора.
+   - Чому баг: Метод .sort() мутує оригінальний вхідний масив (побічний ефект). Крім того, виклик .sort() без функції-компаратора на масиві об'єктів порівнює їх як [object Object], а не за віком.
+   - Як виправлено: Створено копію масиву через спред-оператор [...users] перед сортуванням та додано компаратор (a, b) => a.age - b.age.
+
+2. Баг 2 (Відсутність повернення значення у map):
+   - Що було: users.map(user => { const line = ...; }) без return.
+   - Чому баг: Метод .map() очікує повернення значення з коллбека. Без return повертається undefined, утворюючи масив [undefined, undefined, ...].
+   - Як виправлено: Додано повернення шаблонного рядка `${name} (${age})` з коллбека .map().
+
+3. Баг 3 (Зайвий роздільник у кінці рядка):
+   - Що було: Конкатенація рядків у циклі через += з фіксованим роздільником ", ".
+   - Чому баг: У кінці рядка залишалася зайва кома з пробілом (наприклад, "Ivan (19), Anna (22), ").
+   - Як виправлено: Використано комбінацію .map() та .join(', '), яка додає роздільники тільки МІЖ елементами.
+*/
+
+// --- Рефакторений варіант getReport ---
+const getReport = (users) => {
+  if (!Array.isArray(users) || users.length === 0) {
+    return 'No active users';
+  }
+
+  return [...users]
+    .filter(({ isActive }) => Boolean(isActive))
+    .sort((a, b) => a.age - b.age)
+    .map(({ name, age }) => `${name} (${age})`)
+    .join(', ');
+};
+
+// --- Перевірка роботи через console.assert ---
+
+const testUsers = [
+  { name: 'Oleg', age: 30, isActive: false },
+  { name: 'Anna', age: 22, isActive: true },
+  { name: 'Ivan', age: 19, isActive: true },
+];
+
+const originalUsersSnapshot = JSON.stringify(testUsers);
+const reportResult = getReport(testUsers);
+
+// 1. Перевірка, що вхідний масив НЕ змінився
+console.assert(
+  JSON.stringify(testUsers) === originalUsersSnapshot,
+  'Failed: Input array was mutated by getReport!'
+);
+
+// 2. Перевірка правильності фільтрації, сортування та форматування
+console.assert(
+  reportResult === 'Ivan (19), Anna (22)',
+  `Failed: Incorrect output report. Got: "${reportResult}"`
+);
+
+// 3. Перевірка порожнього масиву
+console.assert(
+  getReport([]) === 'No active users',
+  'Failed: Should handle empty arrays properly'
+);
